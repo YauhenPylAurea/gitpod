@@ -107,16 +107,9 @@ export default function PrebuildLogs(props: { workspaceId?: string }) {
     }
   }, [ workspaceInstance?.status.phase ]);
 
-  return <>
-    <Suspense fallback={<div />}>
-      <WorkspaceLogs classes="h-64 w-full" logsEmitter={logsEmitter} errorMessage={error?.message} />
-    </Suspense>
-    <div className="mt-2 flex justify-center space-x-2">
-      {workspaceInstance?.status.phase === 'stopped'
-        ? <a href={workspace?.contextURL ? '/#' + workspace.contextURL.replace(/^prebuild/, '') : undefined}><button>Open Workspace</button></a>
-        : <button className="secondary disabled" disabled={true}>Open Workspace</button> }
-    </div>
-  </>;
+  return <Suspense fallback={<div />}>
+    <WorkspaceLogs classes="h-full w-full" logsEmitter={logsEmitter} errorMessage={error?.message} />
+  </Suspense>;
 }
 
 export function watchHeadlessLogs(instanceId: string, onLog: (chunk: string) => void, checkIsDone: () => Promise<boolean>): DisposableCollection {
