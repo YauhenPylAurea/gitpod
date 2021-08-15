@@ -545,6 +545,7 @@ export async function deployToDev(deploymentConfig: DeploymentConfig, workspaceF
         await issueCertficate(werft, k3sClusterCertParams);
     }
 
+
 }
 // returns the static IP address
 function getCoreDevIngressIP(): string {
