@@ -7,7 +7,7 @@ locals {
 }
 
 #
-# DNS records
+# DNS  records
 #
 
 # https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/dns_record_set
