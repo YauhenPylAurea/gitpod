@@ -1,6 +1,6 @@
 
 locals {
-  # As we did create the zone and IP manually beforehand: have the zone name statically determined
+  # As we did crea te the zone and IP manually beforehand: have the zone name statically determined
   dns_zone_name  = replace(trimsuffix(var.dns_zone_domain, ".-"), ".", "-")
 
   cert_dns_names = [for subdomain in var.subdomains : "${subdomain}${var.domain}"]
