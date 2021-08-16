@@ -22,7 +22,6 @@ export class SubscriptionController {
             // if does not exist:
             //        1. send track event
             //      2. redirect to page
-
         })
 
         return router;
