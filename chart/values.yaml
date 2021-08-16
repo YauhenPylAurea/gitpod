@@ -297,7 +297,12 @@ components:
     resources:
       cpu: "200m"
     github:
-      app: {}
+      app:
+        enabled: true
+        appId: 129675
+        webhookSecret: omgsecret
+        appCert: server-github-app-cert
+        marketPlaceName: gitpod-io
     blockNewUsers: false
     blockNewUsersPasslist: []
     runDbDeleter: true
