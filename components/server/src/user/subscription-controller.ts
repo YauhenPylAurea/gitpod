@@ -12,7 +12,7 @@ export class SubscriptionController {
     get apiRouter(): express.Router {
         const router = express.Router();
 
-        router.get("/unsubscribe", async (req: express.Request, res: express.Response) => {
+        router.get("/unsubscribe", (req: express.Request, res: express.Response) => {
 
             res.send("Subscription controller");
             // if emailAddress exists in User database:
