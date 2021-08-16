@@ -165,19 +165,6 @@ export default function NewProject() {
             ...(User.is(teamOrUser) ? { userId: teamOrUser.id } : { teamId: teamOrUser.id }),
             appInstallationId: String(repo.installationId),
         });
-        //track project creation
-        getGitpodService().server.trackEvent({
-            event: "project_created",
-            properties: {
-                "name": repo.name,
-                "clone_url": repo.cloneUrl,
-                "account": repo.account,
-                "provider": provider,
-                "owner_type": User.is(teamOrUser) ? "user" : "team",
-                "owner_id": teamOrUser.id,
-                "app_installation_id": repo.installationId
-            }
-        });
         history.push(`/${User.is(teamOrUser) ? 'projects' : teamOrUser.slug}/${repo.name}/configure`);
     }
 
@@ -459,16 +446,6 @@ function NewTeam(props: {
         }
         try {
             const team = await getGitpodService().server.createTeam(teamName);
-            //track team creation
-            getGitpodService().server.trackEvent({
-                event: "team_created",
-                properties: {
-                    id: team.id,
-                    name: team.name,
-                    slug: team.slug,
-                    created_at: team.creationTime
-                }
-            });
             setTeams(await getGitpodService().server.getTeams());
             props.onSuccess(team);
         } catch (error) {

@@ -1407,7 +1407,18 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
     public async createTeam(name: string): Promise<Team> {
         // Note: this operation is per-user only, hence needs no resource guard
         const user = this.checkAndBlockUser("createTeam");
-        return this.teamDB.createTeam(user.id, name);
+        const team = await this.teamDB.createTeam(user.id, name);
+        this.analytics.track({
+            userId: user.id,
+            event: "team_created",
+            properties: {
+                id: team.id,
+                name: team.name,
+                slug: team.slug,
+                created_at: team.creationTime
+            }
+        })
+        return team;
     }
 
     public async joinTeam(inviteId: string): Promise<Team> {
@@ -1486,7 +1497,21 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
             // Anyone who can read a team's information (i.e. any team member) can create a new project.
             await this.guardTeamOperation(params.teamId, "get");
         }
-        return this.projectsService.createProject(params);
+        const project = this.projectsService.createProject(params);
+        this.analytics.track({
+            userId: user.id,
+            event: "project_created",
+            properties: {
+                name: params.name,
+                clone_url: params.cloneUrl,
+                account: params.account,
+                provider: params.provider,
+                owner_type: !!params.teamId ? "team" : "user",
+                owner_id: !!params.teamId ? params.teamId : params.userId,
+                app_installation_id: params.appInstallationId
+            }
+        })
+        return project;
     }
 
     public async deleteProject(projectId: string): Promise<void> {
