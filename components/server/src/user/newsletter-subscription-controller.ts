@@ -8,13 +8,13 @@ import { injectable } from "inversify";
 import * as express from 'express';
 
 @injectable()
-export class SubscriptionController {
+export class NewsletterSubscriptionController {
     get apiRouter(): express.Router {
         const router = express.Router();
 
         router.get("/unsubscribe", (req: express.Request, res: express.Response) => {
 
-            res.send("Subscription controller");
+            res.send("Newsletter subscription controller");
             // if emailAddress exists in User database:
             //      1. update the database
             //      2. send track event

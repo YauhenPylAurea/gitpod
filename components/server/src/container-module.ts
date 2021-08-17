@@ -80,7 +80,7 @@ import { IAnalyticsWriter } from '@gitpod/gitpod-protocol/lib/analytics';
 import { HeadlessLogServiceClient } from '@gitpod/content-service/lib/headless-log_grpc_pb';
 import { ProjectsService } from './projects/projects-service';
 import { EnvConfig, Config } from './config';
-import { SubscriptionController } from './user/subscription-controller';
+import { NewsletterSubscriptionController } from './user/newsletter-subscription-controller';
 
 export const productionContainerModule = new ContainerModule((bind, unbind, isBound, rebind) => {
     bind(Env).toSelf().inSingletonScope();
@@ -222,5 +222,5 @@ export const productionContainerModule = new ContainerModule((bind, unbind, isBo
 
     bind(ProjectsService).toSelf().inSingletonScope();
 
-    bind(SubscriptionController).toSelf().inSingletonScope();
+    bind(NewsletterSubscriptionController).toSelf().inSingletonScope();
 });

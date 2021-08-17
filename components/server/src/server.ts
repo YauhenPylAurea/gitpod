@@ -41,7 +41,7 @@ import { CodeSyncService } from './code-sync/code-sync-service';
 import { increaseHttpRequestCounter, observeHttpRequestDuration } from './prometheus-metrics';
 import { OAuthController } from './oauth-server/oauth-controller';
 import { HeadlessLogController } from './workspace/headless-log-controller';
-import { SubscriptionController } from './user/subscription-controller';
+import { NewsletterSubscriptionController } from './user/newsletter-subscription-controller';
 import { Config } from './config';
 
 @injectable()
@@ -74,7 +74,7 @@ export class Server<C extends GitpodClient, S extends GitpodServer> {
 
     @inject(HostContextProvider) protected readonly hostCtxProvider: HostContextProvider;
     @inject(OAuthController) protected readonly oauthController: OAuthController;
-    @inject(SubscriptionController) protected readonly subscriptionController: SubscriptionController;
+    @inject(NewsletterSubscriptionController) protected readonly newsletterSubscriptionController: NewsletterSubscriptionController;
 
     protected readonly eventEmitter = new EventEmitter();
     protected app?: express.Application;
@@ -262,7 +262,7 @@ export class Server<C extends GitpodClient, S extends GitpodServer> {
         app.use('/workspace-download', this.workspaceDownloadService.apiRouter);
         app.use('/code-sync', this.codeSyncService.apiRouter);
         app.use('/headless-logs', this.headlessLogController.apiRouter);
-        app.use(this.subscriptionController.apiRouter);
+        app.use(this.newsletterSubscriptionController.apiRouter);
         app.use("/version", (req: express.Request, res: express.Response, next: express.NextFunction) => {
             res.send(this.env.version);
         });
