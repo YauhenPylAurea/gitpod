@@ -359,8 +359,7 @@ func (s *WorkspaceService) DisposeWorkspace(ctx context.Context, req *api.Dispos
 	}
 
 	// remove workspace daemon directory in the node
-	err = os.RemoveAll(sess.ServiceLocDaemon)
-	if err != nil {
+	if err := os.RemoveAll(sess.ServiceLocDaemon); err != nil {
 		log.WithError(err).WithField("workspaceId", req.Id).Error("cannot delete workspace daemon directory")
 	}
 
@@ -763,6 +762,7 @@ func workspaceLifecycleHooks(cfg Config, kubernetesNamespace string, workspaceEx
 	return map[session.WorkspaceState][]session.WorkspaceLivecycleHook{
 		session.WorkspaceInitializing: {setupWorkspace, startIWS},
 		session.WorkspaceReady:        {setupWorkspace, startIWS},
-		session.WorkspaceDisposing:    {iws.StopServingWorkspace},
+		//session.WorkspaceDisposing:    {iws.StopServingWorkspace},
+		session.WorkspaceDisposed: {iws.StopServingWorkspace},
 	}
 }

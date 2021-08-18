@@ -114,6 +114,9 @@ func StopServingWorkspace(ctx context.Context, ws *session.Workspace) (err error
 		return nil
 	}
 
+	// TODO: without this sleep we close the IWS server and we cannot call Teardown.
+	time.Sleep(10 * time.Second)
+
 	stopFn, ok := rawStop.(func())
 	if !ok {
 		return nil
@@ -725,9 +728,10 @@ func (wbs *InWorkspaceServiceServer) WriteIDMapping(ctx context.Context, req *ap
 	return &api.WriteIDMappingResponse{}, nil
 }
 
-// Teardown triggers the final liev backup and possibly shiftfs mark unmount
+// Teardown triggers the final live backup and possibly shiftfs mark unmount
 func (wbs *InWorkspaceServiceServer) Teardown(ctx context.Context, req *api.TeardownRequest) (*api.TeardownResponse, error) {
 	owi := wbs.Session.OWI()
+	log.WithFields(owi).Debug("Running Teardown")
 
 	var (
 		success = true

@@ -10,6 +10,7 @@ import (
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -111,6 +112,9 @@ const (
 
 // Run serves as main entrypoint to the supervisor
 func Run(options ...RunOption) {
+	exitCode := 0
+	defer handleExit(&exitCode)
+
 	defer log.Info("supervisor shut down")
 
 	opts := runOptions{
@@ -264,7 +268,6 @@ func Run(options ...RunOption) {
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	var exitCode int
 	select {
 	case <-sigChan:
 	case shutdownReason := <-shutdown:
@@ -284,9 +287,6 @@ func Run(options ...RunOption) {
 	terminateChildProcesses()
 
 	wg.Wait()
-
-	log.WithField("exitCode", exitCode).Debug("supervisor exit")
-	os.Exit(exitCode)
 }
 
 func createGitpodService(cfg *Config, tknsrv api.TokenServiceServer) *gitpod.APIoverJSONRPC {
@@ -1130,9 +1130,14 @@ func socketActivationForDocker(ctx context.Context, wg *sync.WaitGroup, term *te
 		})
 		return err
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		log.WithError(err).Error("cannot provide Docker activation socket")
 	}
+
+	go func() {
+		<-ctx.Done()
+		l.Close()
+	}()
 }
 
 func analyseConfigChanges(ctx context.Context, wscfg *Config, w analytics.Writer, cfgobs gitpod.ConfigInterface) {
@@ -1218,4 +1223,9 @@ func runAsGitpodUser(cmd *exec.Cmd) *exec.Cmd {
 	cmd.SysProcAttr.Credential.Uid = gitpodUID
 	cmd.SysProcAttr.Credential.Gid = gitpodGID
 	return cmd
+}
+
+func handleExit(ec *int) {
+	exitCode := *ec
+	os.Exit(exitCode)
 }
