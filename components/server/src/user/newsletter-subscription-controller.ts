@@ -6,12 +6,11 @@
 
 import * as express from 'express';
 import { inject, injectable } from "inversify";
-import { DBIdentity, UserDB } from "../../../gitpod-db/lib";
+import { UserDB } from "@gitpod/gitpod-db/lib";
 
 @injectable()
 export class NewsletterSubscriptionController {
     @inject(UserDB) protected readonly userDb: UserDB;
-    @inject(DBIdentity) protected readonly identityDb: DBIdentity;
 
     get apiRouter(): express.Router {
         const router = express.Router();
