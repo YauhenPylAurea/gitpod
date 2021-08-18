@@ -20,32 +20,42 @@ export class NewsletterSubscriptionController {
         const router = express.Router();
 
         router.get("/unsubscribe", async (req: express.Request, res: express.Response) => {
-
-            const newsletterProperties: {[key:string]: string} = {
-                changelog: "unsubscribed_changelog",
-                devx: "unsubscribed_devx"
+            const email: string = req.query.email;
+            const newsletterType: string = req.query.type; //What happens if wrong type
+            const acceptedNewsletterTypes: string[] = ["changelog", "devx"];
+            const newsletterProperties: {[key:string]: {[key: string]: string}} = {
+                changelog: {
+                    property: "unsubscribed_changelog",
+                    value: "allowsChangelogMail"
+                },
+                devx: {
+                    property: "unsubscribed_devx",
+                    value: "allowsDevxMail"
+                }
             }
 
-            const email: string = req.query.email;
-            // What happens if wrong type
-            const newsletterType: string = req.query.type;
-
-            // if (newsletterType !== "changelog" && newsletterType !== "devx" ) {
-            //     return;
-            // }
+            if (acceptedNewsletterTypes.includes(newsletterType)) {
+                res.sendStatus(422);
+            }
 
             const user = (await this.userDb.findUsersByEmail(email))[0];
 
-            // check if newsletterType exists in newsletterProperties
-
             if (user) {
-                await this.gitpodServer.updateLoggedInUser(user);
+                await this.gitpodServer.updateLoggedInUser({
+                    additionalData: {
+                        ...user.additionalData,
+                        emailNotificationSettings: {
+                            ...user.additionalData.emailNotificationSettings,
+                            [newsletterProperties[newsletterType].value]: false
+                        }
+                    }
+                });
 
                 this.analytics.track({
                     userId: user.id,
                     event: "notification_change",
                     properties: {
-                        [newsletterProperties[newsletterType]]: true,
+                        [newsletterProperties[newsletterType].property]: true,
                     }
                 });
             }
@@ -54,10 +64,18 @@ export class NewsletterSubscriptionController {
                     userId: "no-user",
                     event: "notification_change",
                     properties: {
-                        [newsletterProperties[newsletterType]]: true,
+                        [newsletterProperties[newsletterType].property]: true,
                     }
                 });
             }
+
+            console.log("logging ", {
+                userId: "no-user",
+                event: "notification_change",
+                properties: {
+                    [newsletterProperties[newsletterType].property]: true,
+                }
+            });
 
             res.send(`Checking ${newsletterType} subscription which is ${user.fullName}`);
         })
