@@ -41,15 +41,7 @@ export class NewsletterSubscriptionController {
             const user = (await this.userDb.findUsersByEmail(email))[0];
 
             if (user) {
-                await this.gitpodServer.updateLoggedInUser({
-                    additionalData: {
-                        ...user.additionalData,
-                        emailNotificationSettings: {
-                            ...user.additionalData.emailNotificationSettings,
-                            [newsletterProperties[newsletterType].value]: false
-                        }
-                    }
-                });
+                await this.gitpodServer.updateLoggedInUser(user);
 
                 this.analytics.track({
                     userId: user.id,
