@@ -7,7 +7,7 @@
 import * as express from 'express';
 import { inject, injectable } from "inversify";
 import { UserDB } from "@gitpod/gitpod-db/lib";
-import { GitpodServer } from "@gitpod/gitpod-protocol";
+import { GitpodServer, User } from "@gitpod/gitpod-protocol";
 import { IAnalyticsWriter } from "@gitpod/gitpod-protocol/lib/analytics";
 
 @injectable()
@@ -21,7 +21,7 @@ export class NewsletterSubscriptionController {
 
         router.get("/unsubscribe", async (req: express.Request, res: express.Response) => {
             const email: string = req.query.email;
-            const newsletterType: string = req.query.type; //What happens if wrong type
+            const newsletterType: string = req.query.type;
             const acceptedNewsletterTypes: string[] = ["changelog", "devx"];
             const newsletterProperties: {[key:string]: {[key: string]: string}} = {
                 changelog: {
@@ -38,10 +38,18 @@ export class NewsletterSubscriptionController {
                 res.sendStatus(422);
             }
 
-            const user = (await this.userDb.findUsersByEmail(email))[0];
+            const user: User = (await this.userDb.findUsersByEmail(email))[0];
 
-            if (user) {
-                await this.gitpodServer.updateLoggedInUser(user);
+            if (user && user.additionalData && user.additionalData.emailNotificationSettings) {
+                await this.gitpodServer.updateLoggedInUser({
+                    additionalData: {
+                        ...user.additionalData,
+                        emailNotificationSettings: {
+                            ...user.additionalData.emailNotificationSettings,
+                            [newsletterProperties[newsletterType].value]: false
+                        }
+                    }
+                });
 
                 this.analytics.track({
                     userId: user.id,
@@ -53,7 +61,7 @@ export class NewsletterSubscriptionController {
             }
             else {
                 this.analytics.track({
-                    userId: "no-user",
+                    userId: email,
                     event: "notification_change",
                     properties: {
                         [newsletterProperties[newsletterType].property]: true,
