@@ -34,7 +34,7 @@ export class NewsletterSubscriptionController {
                 }
             }
 
-            if (acceptedNewsletterTypes.includes(newsletterType)) {
+            if (!acceptedNewsletterTypes.includes(newsletterType)) {
                 res.sendStatus(422);
             }
 
@@ -55,18 +55,21 @@ export class NewsletterSubscriptionController {
                     userId: user.id,
                     event: "notification_change",
                     properties: {
-                        [newsletterProperties[newsletterType].property]: true,
+                        [newsletterProperties[newsletterType].property]: true
                     }
                 });
+
+                res.send(`Checking ${newsletterType} subscription which is ${user.fullName}`);
             }
             else {
                 this.analytics.track({
                     userId: email,
                     event: "notification_change",
                     properties: {
-                        [newsletterProperties[newsletterType].property]: true,
+                        [newsletterProperties[newsletterType].property]: true
                     }
                 });
+                res.send(`Checking ${newsletterType} subscription for no user with email ${email}`);
             }
 
             console.log("logging ", {
@@ -76,8 +79,6 @@ export class NewsletterSubscriptionController {
                     [newsletterProperties[newsletterType].property]: true,
                 }
             });
-
-            res.send(`Checking ${newsletterType} subscription which is ${user.fullName}`);
         })
 
         return router;
