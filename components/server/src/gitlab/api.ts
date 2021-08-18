@@ -225,12 +225,15 @@ export namespace GitLab {
         short_id: string;
         title: string;
         message: string;
-        parent_ids: string[];
+        parent_ids: string[] | null;
+        author_name: string;
+        authored_date: string;
     }
     export interface Branch {
         commit: Commit;
         name: string;
         default: boolean;
+        web_url: string;
     }
     export interface Tag {
         name: string,
