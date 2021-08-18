@@ -346,23 +346,7 @@ func (m *Monitor) actOnPodEvent(ctx context.Context, status *api.WorkspaceStatus
 			return nil
 		}
 
-		var terminated bool
-		for _, c := range wso.Pod.Status.ContainerStatuses {
-			if c.Name == "workspace" {
-				// Note: sometimes container don't enter `terminated`, but `waiting`. The processes are stopped nonetheless,
-				//       and we should be running the backup. The only thing that keeps the pod alive, is our finalizer.
-				terminated = c.State.Running == nil
-				break
-			}
-		}
-		if _, gone := wso.Pod.Annotations[wsk8s.ContainerIsGoneAnnotation]; !terminated && gone {
-			// workaround for https://github.com/containerd/containerd/pull/4214 which can prevent pod status
-			// propagation. ws-daemon observes the pods and propagates this state out-of-band via the annotation.
-			terminated = true
-		}
-		if terminated {
-			go m.finalizeWorkspaceContent(ctx, wso)
-		}
+		go m.finalizeWorkspaceContent(ctx, wso)
 	}
 
 	if status.Phase == api.WorkspacePhase_STOPPED {

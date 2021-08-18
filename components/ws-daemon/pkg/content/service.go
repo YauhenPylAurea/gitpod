@@ -15,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/containerd/containerd/mount"
 	"github.com/opencontainers/go-digest"
 	ociv1 "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/opentracing/opentracing-go"
@@ -359,8 +360,11 @@ func (s *WorkspaceService) DisposeWorkspace(ctx context.Context, req *api.Dispos
 	}
 
 	// remove workspace daemon directory in the node
-	err = os.RemoveAll(sess.ServiceLocDaemon)
-	if err != nil {
+	mountpoint := filepath.Join(sess.ServiceLocDaemon, "mark")
+	if err := mount.UnmountAll(mountpoint, 0); err != nil {
+		log.WithError(err).WithField("workspaceId", req.Id).Error("cannot unmount workspace daemon directory")
+	}
+	if err := os.RemoveAll(sess.ServiceLocDaemon); err != nil {
 		log.WithError(err).WithField("workspaceId", req.Id).Error("cannot delete workspace daemon directory")
 	}
 

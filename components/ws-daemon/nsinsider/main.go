@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"unsafe"
 
 	cli "github.com/urfave/cli/v2"
@@ -200,7 +201,22 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					return unix.Unmount(c.String("target"), 0)
+					target := c.String("target")
+					if err := unix.Unmount(target, 0); err != nil {
+						// if it was busy, detach it
+						if errno, ok := err.(syscall.Errno); ok && errno == syscall.EBUSY {
+							err = unix.Unmount(target, unix.MNT_DETACH)
+						}
+						if err != nil {
+							// if it was invalid (not mounted), hide the error, else return it
+							if errno, ok := err.(syscall.Errno); !ok || errno != syscall.EINVAL {
+								log.WithError(err).Error("unexpected error")
+								return err
+							}
+						}
+					}
+
+					return nil
 				},
 			},
 			{

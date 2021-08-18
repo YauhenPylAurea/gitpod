@@ -58,9 +58,6 @@ var ring0Cmd = &cobra.Command{
 		log.Init(ServiceName, Version, true, true)
 		log := log.WithField("ring", 0)
 
-		exitCode := 1
-		defer handleExit(&exitCode)
-
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
@@ -69,23 +66,28 @@ var ring0Cmd = &cobra.Command{
 			log.WithError(err).Error("cannot connect to daemon")
 			return
 		}
-		defer conn.Close()
+
+		// before exit first run teardown.
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+
+			_, err := client.Teardown(ctx, &daemonapi.TeardownRequest{})
+			if err != nil {
+				log.WithError(err).Error("cannot trigger teardown")
+			}
+
+			_ = conn.Close()
+		}()
+
+		exitCode := 1
+		defer handleExit(&exitCode)
 
 		prep, err := client.PrepareForUserNS(ctx, &daemonapi.PrepareForUserNSRequest{})
 		if err != nil {
 			log.WithError(err).Fatal("cannot prepare for user namespaces")
 			return
 		}
-		defer func() {
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
-
-			_, err = client.Teardown(ctx, &daemonapi.TeardownRequest{})
-			if err != nil {
-				log.WithError(err).Error("cannot trigger teardown")
-				return
-			}
-		}()
 
 		cmd := exec.Command("/proc/self/exe", "ring1")
 		cmd.SysProcAttr = &syscall.SysProcAttr{
