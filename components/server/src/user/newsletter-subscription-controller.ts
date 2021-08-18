@@ -21,24 +21,31 @@ export class NewsletterSubscriptionController {
 
         router.get("/unsubscribe", async (req: express.Request, res: express.Response) => {
 
-            const email: string = req.query.email;
-            const newsletterType: string = req.query.type;
-
-            const user = await this.userDb.findUsersByEmail(email);
-
-            const newsletterProperties = {
-                changelog: ["unsubscribed_devx", "allowsChangelogMail"],
-                devx: ["unsubscribed_changelog", "allowsDevXMail"]
+            const newsletterProperties: {[key:string]: string} = {
+                changelog: "unsubscribed_changelog",
+                devx: "unsubscribed_devx"
             }
 
-            if (user[0]) {
-                await this.gitpodServer.updateLoggedInUser(user[0]);
+            const email: string = req.query.email;
+            // What happens if wrong type
+            const newsletterType: string = req.query.type;
+
+            // if (newsletterType !== "changelog" && newsletterType !== "devx" ) {
+            //     return;
+            // }
+
+            const user = (await this.userDb.findUsersByEmail(email))[0];
+
+            // check if newsletterType exists in newsletterProperties
+
+            if (user) {
+                await this.gitpodServer.updateLoggedInUser(user);
 
                 this.analytics.track({
-                    userId: user[0].id,
+                    userId: user.id,
                     event: "notification_change",
                     properties: {
-                        [newsletterProperties[newsletterType][0]]: !newsletterProperties[newsletterType][1],
+                        [newsletterProperties[newsletterType]]: true,
                     }
                 });
             }
@@ -47,13 +54,12 @@ export class NewsletterSubscriptionController {
                     userId: "no-user",
                     event: "notification_change",
                     properties: {
-                        [newsletterProperties[newsletterType][0]]: !newsletterProperties[newsletterType][1],
+                        [newsletterProperties[newsletterType]]: true,
                     }
                 });
             }
 
-
-            res.send(`Checking ${newsletterType} subscription for ${user.length} email which is ${user[0].fullName}`);
+            res.send(`Checking ${newsletterType} subscription which is ${user.fullName}`);
         })
 
         return router;
