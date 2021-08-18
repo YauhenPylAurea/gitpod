@@ -21,9 +21,12 @@ export class NewsletterSubscriptionController {
             const email: string = req.query.email;
             const newsletterType: string = req.query.type;
 
-            const userResults = await this.userDb.findUsersByEmail(email);
+            const userWithEmailExists = await this.userDb.findUsersByEmail(email);
+            if (userWithEmailExists) {
+            }
 
-            res.send(`${newsletterType} subscription for ${email} found ${userResults.length} which is ${userResults}`);
+
+            res.send(`Checking ${newsletterType} subscription for ${userWithEmailExists.length} email which is ${userWithEmailExists[0].fullName}`);
         })
 
         return router;
