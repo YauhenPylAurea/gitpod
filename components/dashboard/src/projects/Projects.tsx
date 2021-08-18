@@ -77,7 +77,16 @@ export default function () {
                 <h3 className="text-center text-gray-500 mt-8">No Recent Projects</h3>
                 <p className="text-center text-base text-gray-500 mt-4">Add projects to enable and manage Prebuilds.<br /><a className="gp-link" href="https://www.gitpod.io/docs/prebuilds/">Learn more about Prebuilds</a></p>
                 <div className="flex space-x-2 justify-center mt-7">
-                    <Link to={newProjectUrl}><button>New Project</button></Link>
+                    <Link to={newProjectUrl}><button onClick={() => {
+                        //track project button clicked 'new_project'
+                        getGitpodService().server.trackEvent({
+                            event: "project_button_clicked",
+                            properties:{
+                                button:'new_project'
+                            }
+                        })
+                    }
+                    }>New Project</button></Link>
                     {team && <Link to="./members"><button className="secondary">Invite Members</button></Link>}
                 </div>
             </div>
