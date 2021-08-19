@@ -58,7 +58,7 @@ export class NewsletterSubscriptionController {
                     }
                 });
 
-                res.send(`Checking ${newsletterType} subscription which is ${user.fullName}`);
+                res.send(`Checking > ${newsletterType} subscription which is > ${user.fullName} with > ${user.additionalData} and settings > ${user.additionalData.emailNotificationSettings}`);
             }
             else {
                 this.analytics.track({
