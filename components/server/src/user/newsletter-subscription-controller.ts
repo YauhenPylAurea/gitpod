@@ -39,7 +39,16 @@ export class NewsletterSubscriptionController {
             const user = (await this.userDb.findUsersByEmail(email))[0];
 
             if (user && user.additionalData && user.additionalData.emailNotificationSettings) {
-                await this.userDb.updateUserPartial(user);
+                await this.userDb.updateUserPartial({
+                    ...user,
+                    additionalData: {
+                        ...user.additionalData,
+                        emailNotificationSettings: {
+                            ...user.additionalData.emailNotificationSettings,
+                            [newsletterProperties[newsletterType].value]: false
+                        }
+                    }
+                });
 
                 this.analytics.track({
                     userId: user.id,
@@ -61,6 +70,7 @@ export class NewsletterSubscriptionController {
                 });
                 res.send(`Checking ${newsletterType} subscription for no user with email ${email}`);
             }
+            console.log("user > ", user);
         })
 
         return router;
