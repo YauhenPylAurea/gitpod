@@ -7,7 +7,7 @@
 import { BlobServiceClient } from "@gitpod/content-service/lib/blobs_grpc_pb";
 import { DownloadUrlRequest, DownloadUrlResponse, UploadUrlRequest, UploadUrlResponse } from '@gitpod/content-service/lib/blobs_pb';
 import { AppInstallationDB, UserDB, UserMessageViewsDB, WorkspaceDB, DBWithTracing, TracedWorkspaceDB, DBGitpodToken, DBUser, UserStorageResourcesDB, TeamDB } from '@gitpod/gitpod-db/lib';
-import { AuthProviderEntry, AuthProviderInfo, Branding, CommitContext, Configuration, CreateWorkspaceMode, DisposableCollection, GetWorkspaceTimeoutResult, GitpodClient, GitpodServer, GitpodToken, GitpodTokenType, InstallPluginsParams, PermissionName, PortVisibility, PrebuiltWorkspace, PrebuiltWorkspaceContext, PreparePluginUploadParams, ResolvedPlugins, ResolvePluginsParams, SetWorkspaceTimeoutResult, StartPrebuildContext, StartWorkspaceResult, Terms, Token, UninstallPluginParams, User, UserEnvVar, UserEnvVarValue, UserInfo, WhitelistedRepository, Workspace, WorkspaceContext, WorkspaceCreationResult, WorkspaceImageBuild, WorkspaceInfo, WorkspaceInstance, WorkspaceInstancePort, WorkspaceInstanceUser, WorkspaceTimeoutDuration, GuessGitTokenScopesParams, GuessedGitTokenScopes, Team, TeamMemberInfo, TeamMembershipInvite, CreateProjectParams, Project, ProviderRepository, PrebuildInfo, TeamMemberRole, WithDefaultConfig, FindPrebuildsParams, PrebuildUpdate } from '@gitpod/gitpod-protocol';
+import { AuthProviderEntry, AuthProviderInfo, Branding, CommitContext, Configuration, CreateWorkspaceMode, DisposableCollection, GetWorkspaceTimeoutResult, GitpodClient, GitpodServer, GitpodToken, GitpodTokenType, InstallPluginsParams, PermissionName, PortVisibility, PrebuiltWorkspace, PrebuiltWorkspaceContext, PreparePluginUploadParams, ResolvedPlugins, ResolvePluginsParams, SetWorkspaceTimeoutResult, StartPrebuildContext, StartWorkspaceResult, Terms, Token, UninstallPluginParams, User, UserEnvVar, UserEnvVarValue, UserInfo, WhitelistedRepository, Workspace, WorkspaceContext, WorkspaceCreationResult, WorkspaceImageBuild, WorkspaceInfo, WorkspaceInstance, WorkspaceInstancePort, WorkspaceInstanceUser, WorkspaceTimeoutDuration, GuessGitTokenScopesParams, GuessedGitTokenScopes, Team, TeamMemberInfo, TeamMembershipInvite, CreateProjectParams, Project, ProviderRepository, PrebuildInfo, TeamMemberRole, WithDefaultConfig, FindPrebuildsParams } from '@gitpod/gitpod-protocol';
 import { AccountStatement } from "@gitpod/gitpod-protocol/lib/accounting-protocol";
 import { AdminBlockUserRequest, AdminGetListRequest, AdminGetListResult, AdminGetWorkspacesRequest, AdminModifyPermanentWorkspaceFeatureFlagRequest, AdminModifyRoleOrPermissionRequest, WorkspaceAndInstance } from '@gitpod/gitpod-protocol/lib/admin-protocol';
 import { GetLicenseInfoResult, LicenseFeature, LicenseValidationResult } from '@gitpod/gitpod-protocol/lib/license-protocol';
@@ -123,25 +123,6 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
         log.info({ userId: this.user?.id }, 'initializeClient');
 
         this.listenForWorkspaceInstanceUpdates();
-        this.listenForPrebuildUpdates();
-    }
-
-    protected allProjectsForUser: string[] = [];
-    protected listenForPrebuildUpdates(): void {
-        const mayAccessProject = (projectId: string) => {
-            return this.allProjectsForUser.includes(projectId);
-        }
-
-        // 'registering for *ALL* prebuild updates and filtering for relevant ones inside of the
-        // event handler
-        this.disposables.push(this.messageBusIntegration.listenForPrebuildUpdates(
-            (ctx: TraceContext, update: PrebuildUpdate) => {
-                const { projectId } = update.prebuildInfo;
-                if (mayAccessProject(projectId)) {
-                    this.client?.onPrebuildUpdate(update);
-                }
-            }
-        ));
     }
 
     protected listenForWorkspaceInstanceUpdates(): void {
@@ -274,15 +255,6 @@ export class GitpodServerImpl<Client extends GitpodClient, Server extends Gitpod
             if (updatedUser) {
                 this.user = updatedUser;
             }
-
-            // update all project this user has access to
-            const allProjectsForUser: string[] = [];
-            const teams = await this.teamDB.findTeamsByUser(this.user.id);
-            for (const team of teams) {
-                allProjectsForUser.push(...(await this.projectsService.getTeamProjects(team.id)).map(p => p.id));
-            }
-            allProjectsForUser.push(...(await this.projectsService.getUserProjects(this.user.id)).map(p => p.id));
-            this.allProjectsForUser = allProjectsForUser;
         }
     }
     protected termsAccepted: boolean | undefined;

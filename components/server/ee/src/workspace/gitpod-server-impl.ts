@@ -7,7 +7,7 @@
 import { injectable, inject } from "inversify";
 import { GitpodServerImpl } from "../../../src/workspace/gitpod-server-impl";
 import { TraceContext } from "@gitpod/gitpod-protocol/lib/util/tracing";
-import { GitpodServer, GitpodClient, AdminGetListRequest, User, AdminGetListResult, Permission, AdminBlockUserRequest, AdminModifyRoleOrPermissionRequest, RoleOrPermission, AdminModifyPermanentWorkspaceFeatureFlagRequest, UserFeatureSettings, AdminGetWorkspacesRequest, WorkspaceAndInstance, GetWorkspaceTimeoutResult, WorkspaceTimeoutDuration, WorkspaceTimeoutValues, SetWorkspaceTimeoutResult, WorkspaceContext, CreateWorkspaceMode, WorkspaceCreationResult, PrebuiltWorkspaceContext, CommitContext, PrebuiltWorkspace, PermissionName, WorkspaceInstance, EduEmailDomain, ProviderRepository, Queue } from "@gitpod/gitpod-protocol";
+import { GitpodServer, GitpodClient, AdminGetListRequest, User, AdminGetListResult, Permission, AdminBlockUserRequest, AdminModifyRoleOrPermissionRequest, RoleOrPermission, AdminModifyPermanentWorkspaceFeatureFlagRequest, UserFeatureSettings, AdminGetWorkspacesRequest, WorkspaceAndInstance, GetWorkspaceTimeoutResult, WorkspaceTimeoutDuration, WorkspaceTimeoutValues, SetWorkspaceTimeoutResult, WorkspaceContext, CreateWorkspaceMode, WorkspaceCreationResult, PrebuiltWorkspaceContext, CommitContext, PrebuiltWorkspace, PermissionName, WorkspaceInstance, EduEmailDomain, ProviderRepository, Queue, PrebuildUpdate } from "@gitpod/gitpod-protocol";
 import { ResponseError } from "vscode-jsonrpc";
 import { TakeSnapshotRequest, AdmissionLevel, ControlAdmissionRequest, StopWorkspacePolicy, DescribeWorkspaceRequest, SetTimeoutRequest } from "@gitpod/ws-manager/lib";
 import { ErrorCodes } from "@gitpod/gitpod-protocol/lib/messaging/error";
@@ -76,6 +76,37 @@ export class GitpodServerEEImpl extends GitpodServerImpl<GitpodClient, GitpodSer
     initialize(client: GitpodClient | undefined, clientRegion: string | undefined, user: User, accessGuard: ResourceAccessGuard): void {
         super.initialize(client, clientRegion, user, accessGuard);
         this.listenToCreditAlerts();
+        this.listenForPrebuildUpdates();
+    }
+
+    protected async listenForPrebuildUpdates() {
+        // 'registering for prebuild updates for all projects this user has access to
+        const projects = await this.getAccessiibleProjects();
+        for (const projectId of projects) {
+            this.disposables.push(this.messageBusIntegration.listenForPrebuildUpdates(
+                (ctx: TraceContext, update: PrebuildUpdate) => {
+                    this.client?.onPrebuildUpdate(update);
+                },
+                projectId
+            ));
+        }
+
+        // TODO(at) we need to keep the list of accessible project up to date
+    }
+
+    protected async getAccessiibleProjects() {
+        if (!this.user) {
+            return [];
+        }
+
+        // update all project this user has access to
+        const allProjects: string[] = [];
+        const teams = await this.teamDB.findTeamsByUser(this.user.id);
+        for (const team of teams) {
+            allProjects.push(...(await this.projectsService.getTeamProjects(team.id)).map(p => p.id));
+        }
+        allProjects.push(...(await this.projectsService.getUserProjects(this.user.id)).map(p => p.id));
+        return allProjects;
     }
 
     /**

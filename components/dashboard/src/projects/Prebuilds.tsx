@@ -40,14 +40,13 @@ export default function () {
         }
         const registration = getGitpodService().registerClient({
             onPrebuildUpdate: (update) => {
-
                 if (!project) {
                     return;
                 }
                 if (update.prebuildInfo.projectId === project.id) {
                     // TODO(at) create a proper model to update the state
                     setPrebuilds((prev) => {
-                        const existingPrebuild = prev.find(p => p.id);
+                        const existingPrebuild = prev.find(p => p.id === update.prebuildInfo.id);
                         if (existingPrebuild) {
                             existingPrebuild.status = update.status;
                             return [...prev];
