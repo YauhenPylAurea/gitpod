@@ -146,8 +146,9 @@ func run(origin, sshConfig string, apiPort int, allowCORSFromPort bool) error {
 	cb := bastion.CompositeCallbacks{
 		&logCallbacks{},
 	}
+	s := &bastion.SSHConfigWritingCallback{Path: sshConfig}
 	if sshConfig != "" {
-		cb = append(cb, &bastion.SSHConfigWritingCallback{Path: sshConfig})
+		cb = append(cb, s)
 	}
 
 	var b *bastion.Bastion
@@ -172,7 +173,7 @@ func run(origin, sshConfig string, apiPort int, allowCORSFromPort bool) error {
 
 	b = bastion.New(client, cb)
 	grpcServer := grpc.NewServer()
-	appapi.RegisterLocalAppServer(grpcServer, bastion.NewLocalAppService(b))
+	appapi.RegisterLocalAppServer(grpcServer, bastion.NewLocalAppService(b, s))
 	allowOrigin := func(origin string) bool {
 		// Is the origin a subdomain of the installations hostname?
 		return hostRegex.Match([]byte(origin))
