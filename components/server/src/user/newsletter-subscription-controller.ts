@@ -7,13 +7,11 @@
 import * as express from 'express';
 import { inject, injectable } from "inversify";
 import { UserDB } from "@gitpod/gitpod-db/lib";
-import { GitpodServer, User } from "@gitpod/gitpod-protocol";
 import { IAnalyticsWriter } from "@gitpod/gitpod-protocol/lib/analytics";
 
 @injectable()
 export class NewsletterSubscriptionController {
     @inject(UserDB) protected readonly userDb: UserDB;
-    @inject(GitpodServer) protected readonly gitpodServer: GitpodServer;
     @inject(IAnalyticsWriter) protected readonly analytics: IAnalyticsWriter;
 
     get apiRouter(): express.Router {
@@ -38,18 +36,10 @@ export class NewsletterSubscriptionController {
             //     res.sendStatus(422);
             // }
 
-            const user: User = (await this.userDb.findUsersByEmail(email))[0];
+            const user = (await this.userDb.findUsersByEmail(email))[0];
 
             if (user && user.additionalData && user.additionalData.emailNotificationSettings) {
-                await this.gitpodServer.updateLoggedInUser({
-                    additionalData: {
-                        ...user.additionalData,
-                        emailNotificationSettings: {
-                            ...user.additionalData.emailNotificationSettings,
-                            [newsletterProperties[newsletterType].value]: false
-                        }
-                    }
-                });
+                await this.userDb.updateUserPartial(user);
 
                 this.analytics.track({
                     userId: user.id,
@@ -71,14 +61,6 @@ export class NewsletterSubscriptionController {
                 });
                 res.send(`Checking ${newsletterType} subscription for no user with email ${email}`);
             }
-
-            console.log("logging ", {
-                userId: "no-user",
-                event: "notification_change",
-                properties: {
-                    [newsletterProperties[newsletterType].property]: true,
-                }
-            });
         })
 
         return router;
